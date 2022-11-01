@@ -1,3 +1,8 @@
+project(VlasovMaxwell2D2V)
+cmake_minimum_required(VERSION 3.1.0)
+enable_language(Fortran)
+find_package(MPI REQUIRED Fortran)
+
 SET(CMAKE_Fortran_COMPILER ${MPI_Fortran_COMPILER})
 INCLUDE_DIRECTORIES(${MPI_Fortran_MOD_DIR})
 
