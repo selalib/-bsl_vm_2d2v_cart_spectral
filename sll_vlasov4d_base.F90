@@ -78,7 +78,8 @@ module sll_vlasov4d_base
  sll_int32  :: loc_sz_i,loc_sz_j,loc_sz_k,loc_sz_l
  sll_int32  :: global_indices(4), gi, gj, gk, gl
  sll_int32  :: ierr
- sll_int32  :: ithf  !< file unit to store energy time evolution
+ sll_int32  :: ithf = 11  !< file unit to store energy time evolution
+ sll_int32  :: idata = 12 !< file unit for namelist
 
 contains
 
@@ -88,7 +89,6 @@ contains
   sll_int32                             :: psize
   sll_int32                             :: prank
   sll_int32                             :: comm
-  sll_int32  :: idata !< file unit for namelist
 
   sll_int32  :: nx, ny           ! dimensions de l'espace physique
   sll_int32  :: nvx, nvy         ! dimensions de l'espace des vitesses
@@ -121,28 +121,29 @@ contains
   maxwell_type = PSTD
 
   dt=0.01
-  nbiter=1000
+  nbiter=10
   fdiag=1000
   fthdiag=1
   x0=0.
   x1=12.566370614359172
   y0=0.
   y1=12.566370614359172
-  nx=128
-  ny=128
+  nx=32
+  ny=32
   vx0=-6.0
   vx1=6.0
   vy0=-6.0
   vy1=6.0
-  nvx=128
-  nvy=128
+  nvx=64
+  nvy=64
   num_case=3
 
 
   if (prank == MPI_MASTER) then
 
      call initialize_file(idata, ithf)
-     read(unit=idata,nml=time)
+	 print*, idata
+     read(idata,nml=time)
 	 read(idata,NML=diag)
      read(idata,NML=phys_space)
      read(idata,NML=vel_space)
@@ -751,14 +752,15 @@ contains
  subroutine initialize_file(idata, ithf)
    integer :: idata, ithf
    character(len=72) :: filename
-   integer :: IO_stat ! indicateur d'erreur
+   logical :: there 
+   integer :: IO_stat
 
    call get_command_argument( 1, filename )
+   inquire( file=trim(filename), exist=there ) 
+
+   if (.not. there) STOP "Miss argument file.nml"
 
    open(idata,file=trim(filename),IOStat=IO_stat)
-   if (IO_stat/=0) then
-	   STOP "Miss argument file.nml"
-   endif
    open(ithf,file="thf.dat",IOStat=IO_stat)
    if (IO_stat/=0) STOP "erreur d'ouverture du fichier thf.dat"
  end subroutine initialize_file
