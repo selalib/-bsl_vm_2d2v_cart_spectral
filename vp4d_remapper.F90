@@ -4,7 +4,6 @@ program vp4d
 
   use sll_vlasov4d_base
   use sll_vlasov4d_poisson
-  use sll_m_mudpack
   use sll_m_gnuplot
   use init_functions
 
@@ -12,7 +11,6 @@ program vp4d
 
   type(vlasov4d_poisson)    :: vlasov4d 
   type(sll_t_poisson_2d_periodic_fft) :: poisson 
-  type(sll_t_mudpack_solver)  :: poisson_mg
 
   type(sll_t_cubic_spline_interpolator_1d), target :: spl_x1
   type(sll_t_cubic_spline_interpolator_1d), target :: spl_x2
@@ -105,17 +103,9 @@ program vp4d
   end do
   end do
 
-  if (poisson_type == SPECTRAL) then
-     call sll_o_initialize(poisson, &
-                  vlasov4d%eta1_min, vlasov4d%eta1_max, vlasov4d%nc_eta1, &
-                  vlasov4d%eta2_min, vlasov4d%eta2_max, vlasov4d%nc_eta2, error)
-  else
-
-     SLL_CLEAR_ALLOCATE(phi(1:loc_sz_i,1:loc_sz_j),error)
-     call sll_o_create(poisson_mg, &
-                  vlasov4d%eta1_min, vlasov4d%eta1_max, vlasov4d%nc_eta1, &
-                  vlasov4d%eta2_min, vlasov4d%eta2_max, vlasov4d%nc_eta2)
-  end if
+  call sll_o_initialize(poisson, &
+             vlasov4d%eta1_min, vlasov4d%eta1_max, vlasov4d%nc_eta1, &
+             vlasov4d%eta2_min, vlasov4d%eta2_max, vlasov4d%nc_eta2, error)
 
   time = 0.0_f64
   call advection_x1(vlasov4d,0.5*vlasov4d%dt)
@@ -131,11 +121,7 @@ program vp4d
 
      call compute_charge(vlasov4d)
      
-     if (poisson_type == SPECTRAL) then
-        call sll_o_solve(poisson,vlasov4d%ex,vlasov4d%ey,vlasov4d%rho)
-     else
-        call sll_o_solve(poisson_mg,phi,vlasov4d%rho,vlasov4d%ex,vlasov4d%ey)
-     end if
+     call sll_o_solve(poisson,vlasov4d%ex,vlasov4d%ey,vlasov4d%rho)
 
      !call plot('rho')
      !call plot('phi')
@@ -163,12 +149,6 @@ program vp4d
   tcpu2 = MPI_WTIME()
   if (prank == MPI_MASTER) &
        write(*,"(//10x,' Wall time = ', G15.3, ' sec' )") (tcpu2-tcpu1)*psize
-
-  if (poisson_type == SPECTRAL) then
-     !call delete(poisson)
-  else
-     call sll_o_delete(poisson_mg)
-  end if
 
   call sll_s_halt_collective()
 

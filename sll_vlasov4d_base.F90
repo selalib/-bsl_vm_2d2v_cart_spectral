@@ -105,14 +105,11 @@ contains
   sll_real64 :: eps = 0.05_f64   ! perturbation amplitude
   sll_int32  :: meth             ! method
 
-
   namelist /time/        dt, nbiter
   namelist /diag/        fdiag, fthdiag
   namelist /phys_space/  x0,x1,y0,y1,nx,ny
   namelist /vel_space/   vx0,vx1,vy0,vy1,nvx,nvy
   namelist /test_case/   num_case, eps
-  namelist /algo_charge/ va, meth
-  namelist /field_solvers/ poisson_type, maxwell_type
 
   prank = sll_f_get_collective_rank(sll_v_world_collective)
   psize = sll_f_get_collective_size(sll_v_world_collective)
@@ -123,16 +120,33 @@ contains
   poisson_type = SPECTRAL
   maxwell_type = PSTD
 
+  dt=0.01
+  nbiter=1000
+  fdiag=1000
+  fthdiag=1
+  x0=0.
+  x1=12.566370614359172
+  y0=0.
+  y1=12.566370614359172
+  nx=128
+  ny=128
+  vx0=-6.0
+  vx1=6.0
+  vy0=-6.0
+  vy1=6.0
+  nvx=128
+  nvy=128
+  num_case=3
+
+
   if (prank == MPI_MASTER) then
 
      call initialize_file(idata, ithf)
-     read(idata,NML=time)
-     read(idata,NML=diag)
+     read(unit=idata,nml=time)
+	 read(idata,NML=diag)
      read(idata,NML=phys_space)
      read(idata,NML=vel_space)
      read(idata,NML=test_case)
-     read(idata,NML=algo_charge)
-     read(idata,NML=field_solvers)
      close(idata)
 
   end if
@@ -742,7 +756,9 @@ contains
    call get_command_argument( 1, filename )
 
    open(idata,file=trim(filename),IOStat=IO_stat)
-   if (IO_stat/=0) STOP "Miss argument file.nml"
+   if (IO_stat/=0) then
+	   STOP "Miss argument file.nml"
+   endif
    open(ithf,file="thf.dat",IOStat=IO_stat)
    if (IO_stat/=0) STOP "erreur d'ouverture du fichier thf.dat"
  end subroutine initialize_file
